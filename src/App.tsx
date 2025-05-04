@@ -1,26 +1,26 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { useEffect } from "react";
+import { auth } from "./services/firebase";
 
 function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+  useEffect(() => {
+    const testLogin = async () => {
+      try {
+        const userCredential = await signInWithEmailAndPassword(
+          auth,
+          "email@exemplo.com", // coloque um e-mail real
+          "senha123" // coloque a senha correspondente
+        );
+        console.log("Login bem-sucedido:", userCredential.user);
+      } catch (error) {
+        console.error("Erro ao fazer login:", error);
+      }
+    };
+
+    testLogin();
+  }, []);
+
+  return <div>Testando login... veja o console</div>;
 }
 
 export default App;
