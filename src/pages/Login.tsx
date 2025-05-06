@@ -1,6 +1,6 @@
 import { signInWithEmailAndPassword } from "firebase/auth";
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { auth } from "../services/firebase";
 
 export default function Login() {
@@ -38,6 +38,9 @@ export default function Login() {
         <button type="submit">Entrar</button>
       </form>
       {error && <p>{error}</p>}
+      <p>
+        Não tem uma conta? <Link to="/signup">Crie uma aqui</Link>
+      </p>
     </div>
   );
 }

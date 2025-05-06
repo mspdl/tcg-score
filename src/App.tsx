@@ -5,15 +5,16 @@ import {
   BrowserRouter as Router,
   Routes,
 } from "react-router-dom";
-import Navigation from "./components/Navigation"; // Importando o componente Navigation
-import { auth } from "./services/firebase";
 import { JSX } from "react/jsx-runtime";
+import Navigation from "./components/Navigation"; // Importando o componente Navigation
 import Championships from "./pages/Championships";
 import ChampionshipView from "./pages/ChampionshipView";
 import Games from "./pages/Games";
+import { Home } from "./pages/Home";
 import Login from "./pages/Login";
 import Players from "./pages/Players";
-import { Home } from "./pages/Home";
+import SignUp from "./pages/SignUp";
+import { auth } from "./services/firebase";
 
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   const [user, loading] = useAuthState(auth);
@@ -55,6 +56,7 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route path="/signup" element={<SignUp />} />
         <Route path="*" element={<Navigate to="/home" replace />} />
       </Routes>
     </Router>
