@@ -5,13 +5,14 @@ import {
   BrowserRouter as Router,
   Routes,
 } from "react-router-dom";
+import Navigation from "./components/Navigation"; // Importando o componente Navigation
+import { auth } from "./services/firebase";
 import { JSX } from "react/jsx-runtime";
 import Championships from "./pages/Championships";
 import ChampionshipView from "./pages/ChampionshipView";
 import Games from "./pages/Games";
 import Login from "./pages/Login";
 import Players from "./pages/Players";
-import { auth } from "./services/firebase";
 
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   const [user, loading] = useAuthState(auth);
@@ -24,10 +25,10 @@ const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
 function App() {
   return (
     <Router>
+      <Navigation />
       <Routes>
         <Route path="/login" element={<Login />} />
-        <Route path="/campeonato/:id" element={<ChampionshipView />} />{" "}
-        {/* Pública */}
+        <Route path="/campeonato/:id" element={<ChampionshipView />} />
         <Route
           path="/campeonatos"
           element={
