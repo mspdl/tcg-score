@@ -13,6 +13,7 @@ import ChampionshipView from "./pages/ChampionshipView";
 import Games from "./pages/Games";
 import Login from "./pages/Login";
 import Players from "./pages/Players";
+import { Home } from "./pages/Home";
 
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   const [user, loading] = useAuthState(auth);
@@ -27,6 +28,7 @@ function App() {
     <Router>
       <Navigation />
       <Routes>
+        <Route path="/home" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/campeonato/:id" element={<ChampionshipView />} />
         <Route
@@ -53,7 +55,7 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route path="*" element={<Navigate to="/campeonatos" replace />} />
+        <Route path="*" element={<Navigate to="/home" replace />} />
       </Routes>
     </Router>
   );
