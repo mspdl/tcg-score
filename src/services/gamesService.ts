@@ -6,10 +6,9 @@ import {
   getDocs,
   deleteDoc,
   doc,
-  query,
-  orderBy,
   Timestamp,
-  writeBatch,
+  query,
+  where,
 } from 'firebase/firestore';
 
 export interface GamePlayer {
@@ -21,49 +20,29 @@ export interface Game {
   id?: string;
   players: GamePlayer[];
   createdAt: Timestamp;
+  date?: string;
 }
 
-// Define sua lógica de pontuação aqui
-const getPointsByPosition = (position: number): number => {
-  switch (position) {
-    case 1:
-      return 3;
-    case 2:
-      return 1;
-    default:
-      return 0;
-  }
-};
-
-export const getGames = async (userId: string): Promise<Game[]> => {
-  const q = query(collection(db, `users/${userId}/games`), orderBy('createdAt', 'desc'));
-  const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Game, 'id'>) }));
-};
-
-export const addGame = async (userId: string, players: GamePlayer[]) => {
-  const batch = writeBatch(db);
-  const gameRef = collection(db, `users/${userId}/games`);
-  const gameDoc = doc(gameRef);
-
-  batch.set(gameDoc, {
+export async function addGame(
+  userId: string,
+  players: GamePlayer[],
+  date: string
+): Promise<void> {
+  const gamesCollection = collection(db, 'users', userId, 'games');
+  await addDoc(gamesCollection, {
     players,
+    date,
     createdAt: Timestamp.now(),
   });
+}
 
-  // Atualiza pontos dos jogadores
-  for (const { playerId, position } of players) {
-    const points = getPointsByPosition(position);
-    const playerRef = doc(db, `users/${userId}/players/${playerId}`);
+export async function getGames(userId: string): Promise<Game[]> {
+  const gamesCollection = collection(db, 'users', userId, 'games');
+  const snapshot = await getDocs(query(gamesCollection));
+  return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Game));
+}
 
-    batch.update(playerRef, {
-      totalPoints: points, // Será substituído abaixo se já existir
-    });
-  }
-
-  await batch.commit();
-};
-
-export const removeGame = async (userId: string, gameId: string) => {
-  return deleteDoc(doc(db, `users/${userId}/games/${gameId}`));
-};
+export async function removeGame(userId: string, gameId: string): Promise<void> {
+  const gameDoc = doc(db, 'users', userId, 'games', gameId);
+  await deleteDoc(gameDoc);
+}

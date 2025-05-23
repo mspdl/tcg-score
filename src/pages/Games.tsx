@@ -10,6 +10,7 @@ export default function Games() {
   const [games, setGames] = useState<Game[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
   const [selectedPlayers, setSelectedPlayers] = useState<GamePlayer[]>([]);
+  const [gameDate, setGameDate] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -48,10 +49,11 @@ export default function Games() {
   };
 
   const handleAddGame = async () => {
-    if (!user || selectedPlayers.length < 4 || selectedPlayers.length > 6) return;
+    if (!user || selectedPlayers.length < 4 || selectedPlayers.length > 6 || !gameDate) return;
     try {
-      await addGame(user.uid, selectedPlayers);
+      await addGame(user.uid, selectedPlayers, gameDate);
       setSelectedPlayers([]);
+      setGameDate('');
       fetchData();
     } catch (err: any) {
       setError(err.message);
@@ -88,6 +90,17 @@ export default function Games() {
             );
           })}
         </div>
+
+        <label className="block mb-2">
+          <span className="text-sm">Data da partida:</span>
+          <input
+            type="date"
+            value={gameDate}
+            onChange={(e) => setGameDate(e.target.value)}
+            className="mt-1 block w-full border rounded p-2"
+          />
+        </label>
+
         <div className="space-y-2">
           {selectedPlayers.map(({ playerId, position }) => {
             const player = players.find((p) => p.id === playerId);
@@ -114,7 +127,7 @@ export default function Games() {
         </div>
         <button
           onClick={handleAddGame}
-          disabled={selectedPlayers.length < 4 || selectedPlayers.length > 6}
+          disabled={selectedPlayers.length < 4 || selectedPlayers.length > 6 || !gameDate}
           className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
         >
           Salvar Partida
@@ -131,7 +144,7 @@ export default function Games() {
             <li key={g.id} className="p-4 border rounded-md">
               <div className="flex justify-between items-center mb-2">
                 <span className="text-sm text-gray-500">
-                  {g.createdAt.toDate().toLocaleString()}
+                  {g.date || g.createdAt.toDate().toLocaleDateString()}
                 </span>
                 <button
                   onClick={() => handleRemoveGame(g.id)}
