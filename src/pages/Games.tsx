@@ -1,29 +1,27 @@
-import { useEffect, useState } from "react";
-import { useAuthState } from "react-firebase-hooks/auth";
-import { auth } from "../services/firebase";
-import { addGame, Game, getGames, removeGame } from "../services/gamesService";
-import { getPlayers, Player } from "../services/playersService";
+// src/pages/Games.tsx
+import { useEffect, useState } from 'react';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { auth } from '../services/firebase';
+import { getGames, addGame, removeGame, Game, GamePlayer } from '../services/gamesService';
+import { getPlayers, Player } from '../services/playersService';
 
 export default function Games() {
   const [user] = useAuthState(auth);
   const [games, setGames] = useState<Game[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
-  const [player1, setPlayer1] = useState("");
-  const [player2, setPlayer2] = useState("");
-  const [score1, setScore1] = useState("");
-  const [score2, setScore2] = useState("");
+  const [selectedPlayers, setSelectedPlayers] = useState<GamePlayer[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = async () => {
     if (!user) return;
     setLoading(true);
-    const [g, p] = await Promise.all([
+    const [gamesData, playersData] = await Promise.all([
       getGames(user.uid),
       getPlayers(user.uid),
     ]);
-    setGames(g);
-    setPlayers(p);
+    setGames(gamesData);
+    setPlayers(playersData);
     setLoading(false);
   };
 
@@ -32,81 +30,94 @@ export default function Games() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  const handleAdd = async () => {
-    if (!user || !player1 || !player2 || player1 === player2) return;
+  const handleAddPlayerToGame = (playerId: string) => {
+    if (selectedPlayers.find((p) => p.playerId === playerId)) return;
+    setSelectedPlayers([...selectedPlayers, { playerId, position: 1 }]);
+  };
+
+  const handlePositionChange = (playerId: string, position: number) => {
+    setSelectedPlayers((prev) =>
+      prev.map((p) =>
+        p.playerId === playerId ? { ...p, position } : p
+      )
+    );
+  };
+
+  const handleRemovePlayerFromGame = (playerId: string) => {
+    setSelectedPlayers((prev) => prev.filter((p) => p.playerId !== playerId));
+  };
+
+  const handleAddGame = async () => {
+    if (!user || selectedPlayers.length < 4 || selectedPlayers.length > 6) return;
     try {
-      await addGame(user.uid, player1, player2, Number(score1), Number(score2));
-      setPlayer1("");
-      setPlayer2("");
-      setScore1("");
-      setScore2("");
+      await addGame(user.uid, selectedPlayers);
+      setSelectedPlayers([]);
       fetchData();
     } catch (err: any) {
       setError(err.message);
     }
   };
 
-  const handleRemove = async (id?: string) => {
+  const handleRemoveGame = async (id?: string) => {
     if (!user || !id) return;
     await removeGame(user.uid, id);
     fetchData();
   };
 
   return (
-    <div className="max-w-xl mx-auto mt-10 p-4 bg-white border border-gray-200 rounded-xl shadow">
-      <h2 className="text-xl font-semibold mb-4 text-center">Jogos</h2>
+    <div className="max-w-2xl mx-auto mt-10 p-4 bg-white border border-gray-200 rounded-xl shadow">
+      <h2 className="text-xl font-semibold mb-4 text-center">Partidas</h2>
 
-      <div className="grid grid-cols-2 gap-2 mb-4">
-        <select
-          value={player1}
-          onChange={(e) => setPlayer1(e.target.value)}
-          className="p-2 border rounded"
-        >
-          <option value="">Jogador 1</option>
-          {players.map((p) => (
-            <option key={p.id} value={p.name}>
-              {p.name}
-            </option>
-          ))}
-        </select>
-        <select
-          value={player2}
-          onChange={(e) => setPlayer2(e.target.value)}
-          className="p-2 border rounded"
-        >
-          <option value="">Jogador 2</option>
-          {players.map((p) => (
-            <option key={p.id} value={p.name}>
-              {p.name}
-            </option>
-          ))}
-        </select>
-        <input
-          value={score1}
-          onChange={(e) => setScore1(e.target.value)}
-          type="number"
-          className="p-2 border rounded"
-          placeholder="Placar 1"
-        />
-        <input
-          value={score2}
-          onChange={(e) => setScore2(e.target.value)}
-          type="number"
-          className="p-2 border rounded"
-          placeholder="Placar 2"
-        />
+      <div className="mb-4">
+        <p className="mb-2">Selecione de 4 a 6 jogadores:</p>
+        {players.length === 0 && (
+          <p className="text-sm text-red-500">Nenhum jogador encontrado.</p>
+        )}
+        <div className="flex flex-wrap gap-2 mb-2">
+          {players.map((player) => {
+            const isSelected = selectedPlayers.find((p) => p.playerId === player.id);
+            return (
+              <button
+                key={player.id}
+                onClick={() => handleAddPlayerToGame(player.id!)}
+                disabled={!!isSelected}
+                className={`px-3 py-1 border rounded-md hover:bg-gray-100 disabled:opacity-50 ${isSelected ? 'cursor-not-allowed' : ''}`}
+              >
+                {player.name} {isSelected ? '✓' : ''}
+              </button>
+            );
+          })}
+        </div>
+        <div className="space-y-2">
+          {selectedPlayers.map(({ playerId, position }) => {
+            const player = players.find((p) => p.id === playerId);
+            return (
+              <div key={playerId} className="flex items-center gap-2">
+                <span className="flex-1">{player?.name}</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={selectedPlayers.length}
+                  value={position}
+                  onChange={(e) => handlePositionChange(playerId, Number(e.target.value))}
+                  className="w-16 p-1 border rounded"
+                />
+                <button
+                  onClick={() => handleRemovePlayerFromGame(playerId)}
+                  className="text-red-600 hover:underline"
+                >
+                  Remover
+                </button>
+              </div>
+            );
+          })}
+        </div>
         <button
-          onClick={handleAdd}
-          className="col-span-2 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400"
-          disabled={
-            !player1 ||
-            !player2 ||
-            player1 === player2 ||
-            score1 === "" ||
-            score2 === ""
-          }
+          onClick={handleAddGame}
+          disabled={selectedPlayers.length < 4 || selectedPlayers.length > 6}
+          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
         >
-          Adicionar Jogo
+          Salvar Partida
         </button>
       </div>
 
@@ -115,26 +126,32 @@ export default function Games() {
       {loading ? (
         <p>Carregando...</p>
       ) : (
-        <ul className="space-y-2">
+        <ul className="space-y-4">
           {games.map((g) => (
-            <li
-              key={g.id}
-              className="flex items-center justify-between p-2 border rounded"
-            >
-              <span>
-                {g.player1} {g.score1} x {g.score2} {g.player2}
-              </span>
-              <button
-                onClick={() => handleRemove(g.id)}
-                className="text-red-600 hover:underline"
-              >
-                Remover
-              </button>
+            <li key={g.id} className="p-4 border rounded-md">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm text-gray-500">
+                  {g.createdAt.toDate().toLocaleString()}
+                </span>
+                <button
+                  onClick={() => handleRemoveGame(g.id)}
+                  className="text-red-600 hover:underline text-sm"
+                >
+                  Remover
+                </button>
+              </div>
+              <ul className="space-y-1">
+                {g.players.map(({ playerId, position }) => {
+                  const player = players.find((p) => p.id === playerId);
+                  return (
+                    <li key={playerId}>
+                      {player?.name || 'Jogador desconhecido'} - Posicao: {position}
+                    </li>
+                  );
+                })}
+              </ul>
             </li>
           ))}
-          {games.length === 0 && (
-            <li className="text-gray-500">Nenhum jogo cadastrado.</li>
-          )}
         </ul>
       )}
     </div>
